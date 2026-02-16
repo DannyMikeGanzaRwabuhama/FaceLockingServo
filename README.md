@@ -23,6 +23,10 @@ The system is designed to be **loosely coupled**:
 
 ## 2. 🏗️ System Architecture
 
+![System Architecture Diagram](docs/architecture.png)
+
+*Figure 1: The Distributed Vision-Control Architecture enforcing strict topic isolation and component decoupling.*
+
 The system follows a strict **Publisher-Subscriber** model using a central VPS broker.
 
 ### 🧩 Components
@@ -151,3 +155,42 @@ During the evaluation phase, the following infrastructure constraints were docum
 The assignment requires connecting the dashboard to Port 9002 (`ws://157.173.101.159:9002`). During our testing, this port appeared unreachable/blocked from our network environment, preventing the dashboard from receiving data despite the code being correct.
 2. **ESP8266 DHCP Failure:**
 The ESP8266 hardware struggled to obtain an IP address (DHCP) on the campus "RCA" network, likely due to 5GHz/2.4GHz band steering issues or IP exhaustion.
+
+---
+
+## 7. 📐 Design Rationale & Architectural Decisions
+
+During implementation, we strictly adhered to the **Phase 1: Open-Loop Actuation** constraints. This section clarifies key design decisions regarding telemetry and state visualization.
+
+### 7.1. 🔄 The "Open-Loop" Visualization Paradox
+
+**❓ Question:** *Why does the dashboard display "Servo Status" when the ESP8266 does not publish its physical position back to the broker?*
+
+**💡 Rationale:**
+In **Phase 1 (Simulation Stage)**, the system is architected as an Open-Loop control system.
+
+1. **📡 Command Flow:** The Vision Node publishes an *intent* (`MOVE_LEFT`) to the MQTT Broker.
+2. **🖥️ Visualization:** The Dashboard subscribes to this intent via the WebSocket Bridge. It visualizes **what the system is commanding**, not the physical telemetry of the servo.
+3. **⚙️ Execution:** The ESP8266 subscribes to the same command and executes it blindly.
+
+True feedback (Closed Loop) where the camera frame updates in response to movement is reserved for **Phase 2**. Therefore, the dashboard correctly reflects the **Control Stream** (the "Last movement status" requirement) rather than physical device telemetry.
+
+### 7.2. 🎯 Confidence Scoring
+
+**❓ Question:** *Why is the confidence score included in the payload?*
+
+**💡 Rationale:**
+The payload structure defined in **Section 4.1** strictly requires a `confidence` field. From a Computer Vision perspective, this serves as a critical "Tracking State" indicator.
+
+* **🟢 High Confidence (>0.8):** Valid face lock; servo commands are trustworthy.
+* **🟠 Low Confidence (<0.6):** Potential false positive; system should hold position (CENTERED) or scan.
+
+Our dashboard visualizes this score to assist in debugging lighting or occlusion issues in real-time.
+
+### 7.3. 🛡️ Compliance with "Forbidden Practices"
+
+We verified our architecture against the strict exclusion list:
+
+* ✅ **🔌 No Direct Device Talk:** PC never communicates directly with ESP8266; all traffic routes through `157.173.101.159:1883`.
+* ✅ **🌐 No Browser MQTT:** Dashboard uses `ws://...:9002` (WebSocket Bridge), strictly avoiding `mqtt.js` or direct Broker connections.
+* ✅ **🔒 Topic Isolation:** All traffic is confined to `vision/y3c_ajhm/` to prevent cross-team interference.
