@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision Control | Pro Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --panel-bg: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-green: #00e676;
+            --accent-red: #ff5252;
+            --accent-blue: #2979ff;
+            --accent-orange: #ff9100;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', monospace; /* Hacker font */
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* HEADER */
+        header {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
+        .team-tag { background: #444; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--accent-orange); }
+
+        /* STATUS BADGE */
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            background: #333;
+            color: #777;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; }
+        .connected .status-dot { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+        .connected { color: var(--accent-green); background: rgba(0, 230, 118, 0.1); }
+        .disconnected .status-dot { background: var(--accent-red); }
+        .disconnected { color: var(--accent-red); background: rgba(255, 82, 82, 0.1); }
+
+        /* GRID LAYOUT */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* CARD STYLES */
+        .card {
+            background: var(--panel-bg);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #444;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .card h3 { margin: 0 0 15px 0; font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 8px; }
+
+        /* SERVO VISUALIZER */
+        .servo-container {
+            position: relative;
+            height: 40px;
+            background: #111;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 20px 0;
+            border: 1px solid #555;
+        }
+        .servo-bar {
+            position: absolute;
+            top: 0; bottom: 0; left: 50%;
+            width: 4px;
+            background: var(--accent-blue);
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: 0 0 10px var(--accent-blue);
+        }
+        .servo-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: #666; }
+
+        /* VALUE DISPLAYS */
+        .big-value { font-size: 2.5rem; font-weight: bold; text-align: center; margin: 10px 0; }
+        .move-left { color: var(--accent-orange); }
+        .move-right { color: var(--accent-orange); }
+        .centered { color: var(--accent-green); }
+        .no-face { color: var(--accent-red); }
+
+        /* LOGS CONSOLE */
+        .log-console {
+            grid-column: 1 / -1; /* Span full width */
+            background: #111;
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+        }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #222; padding-bottom: 2px; }
+        .log-time { color: #666; margin-right: 10px; }
+        .log-info { color: var(--accent-blue); }
+        .log-warn { color: var(--accent-orange); }
+        .log-error { color: var(--accent-red); }
+        .log-success { color: var(--accent-green); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>VISION CONTROL <span class="team-tag">y3c_ajhm</span></h1>
+        </div>
+        <div id="connectionBadge" class="status-badge disconnected">
+            <div class="status-dot"></div>
+            <span id="statusText">DISCONNECTED</span>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+
+        <div class="card">
+            <h3>Servo Position</h3>
+            <div class="servo-container">
+                <div id="servoBar" class="servo-bar"></div>
+            </div>
+            <div class="servo-labels">
+                <span>LEFT</span>
+                <span>CENTER</span>
+                <span>RIGHT</span>
+            </div>
+            <div id="moveStatus" class="big-value">WAITING</div>
+        </div>
+
+        <div class="card">
+            <h3>ArcFace Confidence</h3>
+            <div id="confValue" class="big-value">0.00</div>
+            <div style="background: #333; height: 6px; border-radius: 3px; overflow: hidden;">
+                <div id="confBar" style="width: 0%; height: 100%; background: var(--accent-blue); transition: width 0.3s;"></div>
+            </div>
+            <p style="text-align: right; font-size: 0.8rem; color: #666; margin-top: 5px;">THRESHOLD: 0.65</p>
+        </div>
+
+        <div class="card" style="grid-column: 1 / -1;">
+            <h3>System Logs</h3>
+            <div id="console" class="log-console">
+                <div class="log-entry"><span class="log-time">--:--:--</span> <span class="log-info">Dashboard initialized...</span></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const WS_URL = "ws://157.173.101.159:9002";
+        const consoleDiv = document.getElementById('console');
+        let ws;
+
+        function log(msg, type="info") {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerHTML = `<span class="log-time">[${timeStr}]</span> <span class="log-${type}">${msg}</span>`;
+            consoleDiv.appendChild(div);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight; // Auto scroll
+        }
+
+        function updateServoVisual(status) {
+            const bar = document.getElementById('servoBar');
+            const statText = document.getElementById('moveStatus');
+
+            // Reset
+            bar.style.left = '50%';
+            bar.style.width = '4px';
+            statText.className = 'big-value';
+
+            if (status === "MOVE_LEFT") {
+                bar.style.left = '25%';
+                bar.style.width = '50px';
+                bar.style.backgroundColor = 'var(--accent-orange)';
+                statText.classList.add('move-left');
+                statText.innerText = "◀ MOVING LEFT";
+            }
+            else if (status === "MOVE_RIGHT") {
+                bar.style.left = '65%'; // approx
+                bar.style.width = '50px';
+                bar.style.backgroundColor = 'var(--accent-orange)';
+                statText.classList.add('move-right');
+                statText.innerText = "MOVING RIGHT ▶";
+            }
+            else if (status === "CENTERED") {
+                bar.style.left = '49%';
+                bar.style.width = '10px';
+                bar.style.backgroundColor = 'var(--accent-green)';
+                statText.classList.add('centered');
+                statText.innerText = "● LOCKED";
+            }
+            else {
+                bar.style.backgroundColor = 'var(--accent-red)';
+                statText.classList.add('no-face');
+                statText.innerText = "NO TARGET";
+            }
+        }
+
+        function connect() {
+            log(`Attempting connection to ${WS_URL}...`, "warn");
+
+            try {
+                ws = new WebSocket(WS_URL);
+            } catch (e) {
+                log("Connection failed: " + e, "error");
+                return;
+            }
+
+            ws.onopen = () => {
+                document.getElementById('connectionBadge').className = 'status-badge connected';
+                document.getElementById('statusText').innerText = "ONLINE";
+                log("✅ Connected to Port 9002 API", "success");
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+
+                    // 1. Update Logs (Like the pro dashboard)
+                    log(`RCV: ${data.status} | Conf: ${data.confidence}`, "info");
+
+                    // 2. Update Visuals
+                    updateServoVisual(data.status);
+
+                    // 3. Update Confidence
+                    if (data.confidence) {
+                        document.getElementById('confValue').innerText = parseFloat(data.confidence).toFixed(2);
+                        document.getElementById('confBar').style.width = (data.confidence * 100) + "%";
+                    }
+
+                } catch (e) {
+                    log("Non-JSON packet received", "warn");
+                }
+            };
+
+            ws.onclose = () => {
+                document.getElementById('connectionBadge').className = 'status-badge disconnected';
+                document.getElementById('statusText').innerText = "OFFLINE";
+                log("❌ Connection lost. Reconnecting in 3s...", "error");
+                setTimeout(connect, 3000);
+            };
+        }
+
+        // Start
+        window.onload = connect;
+    </script>
+</body>
+</html>
