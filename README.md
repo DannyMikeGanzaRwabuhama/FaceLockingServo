@@ -23,11 +23,9 @@ The system is designed to be **loosely coupled**:
 
 ## 2. 🏗️ System Architecture
 
-![System Architecture Diagram](docs/architecture.png)
-
-*Figure 1: The Distributed Vision-Control Architecture enforcing strict topic isolation and component decoupling.*
-
 The system follows a strict **Publisher-Subscriber** model using a central VPS broker.
+
+![System Architecture Diagram](docs/architecture.png)
 
 ### 🧩 Components
 
@@ -134,16 +132,12 @@ python vision_node/main.py
 2. Install the **PubSubClient** library via Library Manager.
 3. Update the `ssid` and `password` variables at the top of the file.
 4. Flash the code to your NodeMCU/ESP8266.
-5. **Verify:** Open Serial Monitor (115200 baud) to see `✅ WiFi connected` and `Message received...`.
+5. **Verify:** Open Serial Monitor (9600 baud) to see `✅ WiFi connected` and `Message received...`.
 
 ### Step 3: Web Dashboard 📺
 
-1. Navigate to the `dashboard/` folder.
-2. Open `index.html` in a modern web browser (Chrome/Edge/Firefox).
-* **Important:** If using a strict browser, open as a local file (`file:///...`) to avoid Mixed Content errors with the non-SSL WebSocket.
-
-
-3. **Verify:** The "Status" badge should turn Green/Connected, and arrows should update in real-time.
+**Access Live Dashboard:**
+👉 `http://157.173.101.159:9320/`
 
 ---
 
