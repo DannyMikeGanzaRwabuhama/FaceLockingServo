@@ -27,6 +27,9 @@ The system follows a strict **Publisher-Subscriber** model using a central VPS b
 
 ![System Architecture Diagram](docs/architecture.png)
 
+### Face Tracking Block Diagram
+![Face Tracking Block Diagram](GANZA_RWABUHAMA_DANNY_MIIKE_block_diagram_face_tracking.png)
+
 ### 🧩 Components
 
 1. **Vision Node (PC) 💻**
@@ -91,6 +94,10 @@ FaceLockingServo/
 ├── vision_node/
 │   ├── main.py                # 🧠 Main Vision Engine Entry Point
 │   ├── haar_5pt.py            # 📏 Face Alignment Helper
+│   ├── tracker_mqtt.py        # 📡 MQTT Face Tracking Logic
+│   ├── enroll.py              # 👤 Face Enrollment Utility
+│   ├── evaluate.py            # 📊 Threshold Evaluation Utility
+│   ├── recognize.py           # 👁️ Face Recognition Module
 │   └── models/
 │       └── embedder_arcface.onnx  # 🎭 Face Recognition Model
 ├── requirements.txt           # 📦 Python Dependencies
